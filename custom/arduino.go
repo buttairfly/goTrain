@@ -7,8 +7,9 @@ import (
 	"github.com/codepuree/tilo-railway-company/pkg/traincontrol"
 )
 
+// Brake2Arduino bla
 func Brake2Arduino(tc *traincontrol.TrainControl, blocks [4]string, start int, target int, step int, dur time.Duration) {
-	start_time := time.Now()
+	startTime := time.Now()
 	i := start
 
 	log.Println("----------------Brake Ramp started")
@@ -20,13 +21,14 @@ func Brake2Arduino(tc *traincontrol.TrainControl, blocks [4]string, start int, t
 		i = i - step
 	}
 
-	end_time := time.Now()
-	brake_duration := end_time.Sub(start_time).Seconds()
-	log.Println("----------------Brake Ramp done after: ", brake_duration)
+	endTime := time.Now()
+	brakeDuration := endTime.Sub(startTime).Seconds()
+	log.Println("----------------Brake Ramp done after: ", brakeDuration)
 }
 
+// Accelerate2Arduino bla
 func Accelerate2Arduino(tc *traincontrol.TrainControl, blocks [4]string, start int, target int, step int, dur time.Duration) {
-	start_time := time.Now()
+	startTime := time.Now()
 
 	log.Println("----------------Acceleration Ramp started")
 	for i := start; i <= target; i = i + step {
@@ -36,36 +38,34 @@ func Accelerate2Arduino(tc *traincontrol.TrainControl, blocks [4]string, start i
 		time.Sleep(dur * time.Millisecond)
 	}
 
-	end_time := time.Now()
-	acceleration_duration := end_time.Sub(start_time).Seconds()
-	log.Println("----------------Acceleration Ramp done after: ", acceleration_duration)
+	endTime := time.Now()
+	accelerationDuration := endTime.Sub(startTime).Seconds()
+	log.Println("----------------Acceleration Ramp done after: ", accelerationDuration)
 }
 
-func PartialReset2Arduino(tc *traincontrol.TrainControl, block string) {
-
-	log.Println("----------------Track changed. Reset for block: ", block)
-	tc.SetBlockSpeed(string(block[0]), 0)
-	tc.SetBlockDirection(string(block[0]), "s")
+// Direction2Arduino sets direction for block
+func Direction2Arduino(tc *traincontrol.TrainControl, block byte, direction string) {
+	tc.SetBlockDirection(string(block), direction)
 }
 
-func PartialSet2Arduino(tc *traincontrol.TrainControl, block string, direction string, speed int) {
-
-	log.Println("----------------Track changed. Set for block: ", block)
-	tc.SetBlockSpeed(string(block[0]), speed)
-	tc.SetBlockDirection(string(block[0]), direction)
+// Speed2Arduino sets the speed of an arduino with a byte
+func Speed2Arduino(tc *traincontrol.TrainControl, block byte, speed int) {
+	tc.SetBlockSpeed(string(block), speed)
 }
 
-func FullReset2Arduino(tc *traincontrol.TrainControl, blocks [4]string) {
-
-	log.Println("----------------Reset started for blocks: ", blocks)
-	for _, block := range blocks {
-		tc.SetBlockSpeed(string(block[0]), 0)
-		tc.SetBlockDirection(string(block[0]), "s")
-	}
-
-	log.Println("----------------Reset done")
+// PartialResetBlock2Arduino resets a block
+func PartialResetBlock2Arduino(tc *traincontrol.TrainControl, block byte) {
+	Speed2Arduino(tc, block, 0)
+	Direction2Arduino(tc, block, "s")
 }
 
+// PartialSet2Arduino set block
+func PartialSet2Arduino(tc *traincontrol.TrainControl, block byte, direction string, speed int) {
+	Speed2Arduino(tc, block, speed)
+	Direction2Arduino(tc, block, direction)
+}
+
+// Switches2Arduino alters junctions
 func Switches2Arduino(tc *traincontrol.TrainControl, block string) {
 	if block == "aw" {
 		log.Println("----------------Send Switches for Track 1 west in-/outbound to Arduino")
@@ -127,10 +127,7 @@ func Switches2Arduino(tc *traincontrol.TrainControl, block string) {
 	}
 }
 
-func Direction2Arduino(tc *traincontrol.TrainControl, block string, direction string) {
-	tc.SetBlockDirection(string(block[0]), direction)
-}
-
+// EmergencyStop2Arduino stops all tracks
 func EmergencyStop2Arduino(tc *traincontrol.TrainControl) {
 	tc.SetBlockDirection("a", "s")
 	tc.SetBlockDirection("b", "s")
