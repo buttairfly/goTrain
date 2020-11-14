@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/codepuree/tilo-railway-company/pkg/traincontrol"
-
 )
 
 var EmptyBlock = [4]string{"", "", "f", "g"}
@@ -19,7 +18,8 @@ var targetDirection string = "s"
 var actualSpeed int = 0
 var targetSpeed int = 0
 var previousSpeed int = 0
-
+var currentSpeed int = 0
+var lastAccelerateTick time.Time = time.Unix(0, 0)
 
 // ControlRunner performs an arduino loop with controlCycleDuration
 func ControlRunner(tc *traincontrol.TrainControl) {
@@ -41,7 +41,7 @@ func ControlRunner(tc *traincontrol.TrainControl) {
 }
 
 // Control is run in a short interval
-func Control(tc *traincontrol.TrainControl) {
+func Control(tc *traincontrol.TrainControl, tTrain *traincontrol.Train) {
 	if IsDriveable() {
 		if targetDirection != actualDirection {
 			actualDirection = targetDirection
@@ -49,8 +49,7 @@ func Control(tc *traincontrol.TrainControl) {
 		}
 
 		if targetSpeed != actualSpeed {
-			actualSpeed = targetSpeed
-			SetBlocksSpeed(tc, actualBlocks, targetSpeed)
+			adjustSpeed(tc, tTrain, actualBlocks, actualSpeed, targetSpeed)
 		}
 	}
 
@@ -59,7 +58,32 @@ func Control(tc *traincontrol.TrainControl) {
 		SetSwitches(tc, actualBlocks)
 		ResetInactiveBlocks(tc, actualBlocks)
 	}
+}
 
+func adjustSpeed(
+	tc *traincontrol.TrainControl,
+	tTrain *traincontrol.Train,
+	actualBlocks [4]string,
+	actualSpeed int,
+	targetSpeed int,
+) {
+	now := time.Now()
+	tickDuration := tTrain.Accelerate.Time
+	if now.Sub(lastAccelerateTick) > tickDuration {
+		lastAccelerateTick = now
+		speedDiff := actualSpeed - targetSpeed
+		inc := 0
+		if speedDiff > 0 {
+			// decellerate
+			inc = -1
+		}
+		if speedDiff < 0 {
+			//accelerate
+			inc = 1
+		}
+		actualSpeed += inc
+		SetBlocksSpeed(tc, actualBlocks, actualSpeed)
+	}
 }
 
 // SetDirection sets the direction
